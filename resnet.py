@@ -16,7 +16,7 @@ image_size = (224, 224)
 train_ds = image_dataset_from_directory('data',
                                         subset='training',
                                         seed=42,
-                                        validation_split=0.7,
+                                        validation_split=0.8,
                                         batch_size=batch_size,
                                         image_size=image_size)
 
@@ -80,3 +80,29 @@ outputs = keras.layers.Dense(1)(x)  # создаем выходной слой(d
 model = keras.Model(inputs, outputs)
 
 model.summary()  # резюмирование модели(вывод конфигурации)
+
+# далее приступаем к обучению верхнего слоя
+model.compile(
+    optimizer=keras.optimizers.Adam(),
+    loss=keras.losses.BinaryCrossentropy(from_logits=True),
+    metrics=[keras.metrics.BinaryAccuracy()],
+)
+epochs = 10  # test various variations
+model.fit(train_ds, epochs=epochs, validation_data=validation_ds)
+
+# Разморозить base_model. Обратите внимание, что он продолжает работать в режиме вывода
+# так как мы передали `training=False` при вызове. Это значит, что
+# слои batchnorm не будут обновлять свою пакетную статистику.
+# Это предотвратит отмену всех тренировочных слоев слоями пакетной нормы.
+# мы сделали до сих пор.
+base_model.trainable = True
+model.summary()
+
+model.compile(
+    optimizer=keras.optimizers.Adam(1e-5),  # Low learning rate
+    loss=keras.losses.BinaryCrossentropy(from_logits=True),
+    metrics=[keras.metrics.BinaryAccuracy()],
+)
+
+epochs = 10
+model.fit(train_ds, epochs=epochs, validation_data=validation_ds)
