@@ -71,3 +71,12 @@ base_model.trainable = False
 inputs = keras.Input(shape=(224, 224, 3))
 x = data_augmentation(inputs)  # добавляем рандомную аугментацию данных
 
+# Базовая модель содержит слои пакетной нормы. Мы хотим, чтобы они оставались в режиме вывода
+# когда мы разморозим базовую модель для тонкой настройки, поэтому мы убедимся, что base_model здесь работает в режиме вывода.
+x = base_model(x, training=False)
+# x = keras.layers.GlobalAveragePooling2D()(x)
+x = keras.layers.Dropout(0.2)(x)  # Регуляризация с отсевом
+outputs = keras.layers.Dense(1)(x)  # создаем выходной слой(dense -просто распростарненный слой)
+model = keras.Model(inputs, outputs)
+
+model.summary()  # резюмирование модели(вывод конфигурации)
