@@ -4,10 +4,14 @@ from tensorflow import keras
 from tensorflow.keras import utils
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.preprocessing import image_dataset_from_directory
-
+import matplotlib.pyplot as plt
+from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
+import numpy as np
 
 batch_size = 256
-image_size = (875, 656)
+image_size = (224, 224)
 
 train_ds = image_dataset_from_directory('data',
                                         subset='training',
@@ -24,14 +28,46 @@ validation_ds = image_dataset_from_directory('data',
                                              image_size=image_size)
 
 test_ds = image_dataset_from_directory('data',
-                                       seed=42,
+                                       seed=0,
                                        subset='both',
-                                       validation_split=0.2,
+                                       validation_split=0.1,
                                        batch_size=batch_size,
                                        image_size=image_size)
 
+# переходим к случайной аугументации данных
+from tensorflow import keras
+from tensorflow.keras import layers
 
-# size = (224, 224)  ## зададим размер всех изображений на 224x224 и применим этот размер ко всем датасетам
-# train_ds = train_ds.map(lambda x, y: (tf.image.resize(x, size), y))
-# validation_ds = validation_ds.map(lambda x, y: (tf.image.resize(x, size), y))
-# test_ds = test_ds.map(lambda x, y: (tf.image.resize(x, size), y))
+data_augmentation = keras.Sequential(
+    [
+        layers.RandomFlip("horizontal"),
+        layers.RandomRotation(0.1),
+    ]
+)
+
+
+# for images, labels in train_ds.take(1):
+#     plt.figure(figsize=(10, 10))
+#     first_image = images[0]
+#     for i in range(9):
+#         ax = plt.subplot(3, 3, i + 1)
+#         augmented_image = data_augmentation(
+#             tf.expand_dims(first_image, 0), training=True
+#         )
+#         plt.imshow(augmented_image[0].numpy().astype("int32"))
+#         plt.title(int(labels[0]))
+#         plt.axis("off")
+#
+#     plt.show()
+
+
+# инициализируем базовую предобученную на imagenet модель нейросети ResNet50
+base_model = ResNet50(weights='imagenet')
+
+# Замораживаем нашу базовую модель
+base_model.trainable = False
+
+# Создаем новый верхний выходной слой
+inputs = keras.Input(shape=(224, 224, 3))
+x = data_augmentation(inputs)  # добавляем рандомную аугментацию данных
+
